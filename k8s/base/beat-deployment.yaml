@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-tracker-beat
+  namespace: flight-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flight-tracker-beat
+  template:
+    metadata:
+      labels:
+        app: flight-tracker-beat
+    spec:
+      containers:
+        - name: beat
+          image: ghcr.io/your-org/flight-tracker-beat:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: flight-tracker-config
+            - secretRef:
+                name: flight-tracker-secret
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "250m"

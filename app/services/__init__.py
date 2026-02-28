@@ -1,7 +1,15 @@
-"""
-Services package initialization
-"""
-from app.services.kiwi_service import KiwiService
-from app.services.notification_service import NotificationService
+"""Services module for Flight Tracker Bot."""
+from app.services.keyboard import Keyboards
+from app.services.user_service import UserService, NotificationFrequency, User, UserPreference
+from app.services.alert_service import AlertService, AlertStatus, FlightAlert
 
-__all__ = ["KiwiService", "NotificationService"]
+__all__ = [
+    "Keyboards",
+    "UserService",
+    "NotificationFrequency",
+    "User",
+    "UserPreference",
+    "AlertService",
+    "AlertStatus",
+    "FlightAlert",
+]

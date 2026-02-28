@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: flight-tracker-production
+
+resources:
+  - ../../base
+
+namePrefix: prod-
+
+commonLabels:
+  environment: production
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: flight-tracker-api
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: flight-tracker-worker
+
+configMapGenerator:
+  - name: flight-tracker-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=https://flighttracker.example.com
+      - LOG_LEVEL=INFO

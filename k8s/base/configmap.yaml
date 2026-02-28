@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flight-tracker-config
+  namespace: flight-tracker
+data:
+  ENVIRONMENT: "production"
+  API_PORT: "8000"
+  POSTGRES_HOST: "flight-tracker-db"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "flight_tracker"
+  REDIS_HOST: "flight-tracker-redis"
+  REDIS_PORT: "6379"
+  CORS_ORIGINS: "https://flighttracker.example.com"
+  LOG_LEVEL: "INFO"
+  CELERY_BROKER_URL: "redis://flight-tracker-redis:6379/0"
+  CELERY_RESULT_BACKEND: "redis://flight-tracker-redis:6379/1"
