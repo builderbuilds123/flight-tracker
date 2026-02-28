@@ -1,0 +1,33 @@
+# Development Dependencies
+# Install with: pip install -r requirements-dev.txt
+
+# Testing
+pytest==8.0.0
+pytest-asyncio==0.23.4
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+factory-boy==3.3.0
+
+# Linting
+flake8==7.0.0
+black==24.2.0
+isort==5.13.2
+mypy==1.8.0
+pylint==3.0.3
+
+# Type stubs
+types-redis==4.6.0.20240106
+types-psycopg2==2.9.21.20240106
+
+# Development tools
+pre-commit==3.6.2
+watchfiles==0.21.0
+ipython==8.21.0
+
+# API testing
+httpx==0.26.0
+locust==2.20.1
+
+# Security scanning
+bandit==1.7.7
+safety==3.0.1
