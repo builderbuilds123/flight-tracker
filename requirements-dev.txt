@@ -13,7 +13,7 @@ flake8==7.0.0
 black==24.2.0
 isort==5.13.2
 mypy==1.8.0
-pylint==3.0.3
+pylint==4.0.5
 
 # Type stubs
 types-redis==4.6.0.20240106
