@@ -22,7 +22,7 @@ types-psycopg2==2.9.21.20240106
 # Development tools
 pre-commit==3.6.2
 watchfiles==0.21.0
-ipython==8.21.0
+ipython==9.10.0
 
 # API testing
 httpx==0.26.0
