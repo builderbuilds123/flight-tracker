@@ -1,42 +1,42 @@
 # Flight Price Tracker - Python Dependencies
 
 # Web Framework
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-python-multipart==0.0.6
+fastapi==0.135.1
+uvicorn[standard]==0.41.0
+python-multipart==0.0.22
 
 # Database
-sqlalchemy[asyncio]==2.0.25
-asyncpg==0.29.0
-aiosqlite==0.19.0
-alembic==1.13.1
+sqlalchemy[asyncio]==2.0.47
+asyncpg==0.31.0
+aiosqlite==0.22.1
+alembic==1.18.4
 
 # Redis & Caching
 redis==5.0.1
 
 # Task Queue
-celery==5.3.6
+celery==5.6.2
 
 # HTTP Client
-httpx==0.26.0
+httpx==0.28.1
 
 # Telegram Bot
-aiogram==3.4.1
+aiogram==3.25.0
 python-telegram-bot==21.0
 
 # Configuration
-pydantic==2.5.3
-pydantic-settings==2.1.0
+pydantic==2.12.5
+pydantic-settings==2.13.1
 
 # Utilities
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 
 # Testing
 pytest==7.4.4
 pytest-asyncio==0.23.3
-httpx==0.26.0
+httpx==0.28.1
 
 # Development
 black==23.12.1
-flake8==7.0.0
-mypy==1.8.0
+flake8==7.3.0
+mypy==1.19.1
