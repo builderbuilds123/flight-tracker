@@ -9,9 +9,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 
+import logging
+
 from app.models.flight_alert import FlightAlert
 from app.models.user import User, UserPreference
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from src.services.audit_emitter import AuditEmitter
@@ -121,8 +125,8 @@ class NotificationService:
                             "telegram_chat_id": str(user.telegram_id),
                         },
                     )
-                except Exception:
-                    pass  # Audit is best-effort
+                except Exception as exc:
+                    logger.warning("Audit emission failed for %s %s: %s", AuditAction.NOTIFICATION_SENT, alert.id, exc)
 
             return True
 
@@ -142,9 +146,9 @@ class NotificationService:
                             "telegram_chat_id": str(user.telegram_id),
                         },
                     )
-                except Exception:
-                    pass  # Audit is best-effort
-            print(f"Failed to send notification to user {user.telegram_id}: {e}")
+                except Exception as exc:
+                    logger.warning("Audit emission failed for %s %s: %s", AuditAction.NOTIFICATION_FAILED, alert.id, exc)
+            logger.error("Failed to send notification to user %s: %s", user.telegram_id, e)
             return False
     
     async def send_alert_created_confirmation(

@@ -7,6 +7,9 @@ from sqlalchemy.orm import relationship
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 import enum
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.core.database import Base
 
@@ -115,15 +118,15 @@ class AlertService:
                         "status": alert.status.value,
                     },
                 )
-            except Exception:
-                pass  # Audit is best-effort
+            except Exception as e:
+                logger.warning("Audit emission failed for %s %s: %s", AuditAction.ALERT_CREATED, alert.id, e)
         return alert
-    
+
     async def get_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:
         """Get a specific alert by ID for a user."""
         result = await self.session.execute(select(FlightAlert).where(FlightAlert.id == alert_id, FlightAlert.user_id == user_id))
         return result.scalar_one_or_none()
-    
+
     async def get_user_alerts(self, user_id: int, status: AlertStatus = None) -> List[FlightAlert]:
         """Get all alerts for a user."""
         query = select(FlightAlert).where(FlightAlert.user_id == user_id).order_by(FlightAlert.created_at.desc())
@@ -131,7 +134,7 @@ class AlertService:
             query = query.where(FlightAlert.status == status)
         result = await self.session.execute(query)
         return list(result.scalars().all())
-    
+
     async def update_alert_status(self, alert_id: int, user_id: int, status: AlertStatus) -> Optional[FlightAlert]:
         """Update alert status."""
         alert = await self.get_alert(alert_id, user_id)
@@ -158,8 +161,8 @@ class AlertService:
                         prior_state={"status": prior_status},
                         new_state={"status": status.value},
                     )
-                except Exception:
-                    pass  # Audit is best-effort
+                except Exception as e:
+                    logger.warning("Audit emission failed for %s %s: %s", audit_action, alert_id, e)
         return alert
     
     async def pause_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:

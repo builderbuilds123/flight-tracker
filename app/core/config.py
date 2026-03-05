@@ -73,3 +73,8 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Dependency-injectable settings accessor."""
+    return settings

@@ -18,6 +18,8 @@ import re
 from app.services.user_service import UserService
 from app.services.alert_service import AlertService
 from app.services.keyboard import Keyboards
+from src.infrastructure.db.repositories.audit_repo import AuditEventsRepo
+from src.services.audit_emitter import AuditEmitter
 
 
 class AddAlertHandlers:
@@ -256,8 +258,9 @@ class AddAlertHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
-            
+            audit = AuditEmitter(AuditEventsRepo(session))
+            alert_service = AlertService(session, audit=audit)
+
             alert = await alert_service.create_alert(
                 user_id=user_id,
                 origin_airport=data.get("origin_airport") or data["origin_input"],

@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.api import alerts, prices, health
 from app.core.database import init_db
+from src.api.routes.audit import router as audit_router
 
 
 @asynccontextmanager
@@ -40,6 +41,7 @@ app.add_middleware(
 app.include_router(alerts.router, prefix="/api/v1/alerts", tags=["alerts"])
 app.include_router(prices.router, prefix="/api/v1/prices", tags=["prices"])
 app.include_router(health.router, prefix="/api/v1/health", tags=["health"])
+app.include_router(audit_router)
 
 
 @app.get("/")

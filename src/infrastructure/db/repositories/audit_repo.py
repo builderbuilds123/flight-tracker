@@ -65,14 +65,17 @@ class AuditEventsRepo:
         if end_date is not None:
             stmt = stmt.where(AuditEventORM.created_at <= end_date)
         if cursor is not None:
-            parts = cursor.split("|", 1)
-            if len(parts) == 2:
-                cursor_ts = datetime.fromisoformat(parts[0])
-                cursor_id = uuid.UUID(parts[1])
-                stmt = stmt.where(
-                    tuple_(AuditEventORM.created_at, AuditEventORM.id)
-                    < tuple_(cursor_ts, cursor_id)
-                )
+            try:
+                parts = cursor.split("|", 1)
+                if len(parts) == 2:
+                    cursor_ts = datetime.fromisoformat(parts[0])
+                    cursor_id = uuid.UUID(parts[1])
+                    stmt = stmt.where(
+                        tuple_(AuditEventORM.created_at, AuditEventORM.id)
+                        < tuple_(cursor_ts, cursor_id)
+                    )
+            except (ValueError, TypeError):
+                pass  # Invalid cursor — treat as no cursor
 
         stmt = stmt.order_by(
             AuditEventORM.created_at.desc(),

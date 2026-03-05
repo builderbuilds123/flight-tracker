@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.services.alert_service import AlertService
 from app.services.keyboard import Keyboards
 from app.models.flight_alert import AlertStatus
+from src.infrastructure.db.repositories.audit_repo import AuditEventsRepo
+from src.services.audit_emitter import AuditEmitter
 
 
 class AlertListHandlers:
@@ -23,7 +25,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             alert = await alert_service.get_alert(alert_id, user_id)
         
         if not alert:
@@ -63,7 +65,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             alert = await alert_service.pause_alert(alert_id, user_id)
             await session.commit()
         
@@ -83,7 +85,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             alert = await alert_service.resume_alert(alert_id, user_id)
             await session.commit()
         
@@ -117,7 +119,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             deleted = await alert_service.delete_alert(alert_id, user_id)
             await session.commit()
         
@@ -136,7 +138,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             alerts = await alert_service.get_user_alerts(user_id)
         
         if not alerts:
@@ -171,7 +173,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             alert = await alert_service.pause_alert(alert_id, user_id)
             await session.commit()
         
@@ -195,7 +197,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             alert = await alert_service.resume_alert(alert_id, user_id)
             await session.commit()
         
@@ -219,7 +221,7 @@ class AlertListHandlers:
         user_id = update.effective_user.id
         
         async with self.session_maker() as session:
-            alert_service = AlertService(session)
+            alert_service = AlertService(session, audit=AuditEmitter(AuditEventsRepo(session)))
             deleted = await alert_service.delete_alert(alert_id, user_id)
             await session.commit()
         

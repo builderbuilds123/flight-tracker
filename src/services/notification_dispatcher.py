@@ -5,9 +5,12 @@ All state transitions are guarded by NotificationStateMachine.
 """
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, Protocol
+
+logger = logging.getLogger(__name__)
 
 from src.domain.enums import ActorType, AuditAction, NotificationStatus
 from src.domain.models.notification_event import NotificationEvent
@@ -109,8 +112,8 @@ class NotificationDispatcher:
                         "last_error": result.last_error,
                     },
                 )
-            except Exception:
-                pass  # Audit is best-effort; do not break delivery flow
+            except Exception as e:
+                logger.warning("Audit emission failed for %s %s: %s", action, result.id, e)
         return result
 
     async def retry(self, event_id: uuid.UUID) -> NotificationEvent:
