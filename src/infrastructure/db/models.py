@@ -13,6 +13,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -22,7 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import DeclarativeBase, relationship
 
-from src.domain.enums import AlertStatus, NotificationStatus
+from src.domain.enums import ActorType, AlertStatus, AuditAction, NotificationStatus
 
 
 class Base(DeclarativeBase):
