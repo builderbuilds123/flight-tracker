@@ -20,7 +20,7 @@ from sqlalchemy import (
     Text,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.dialects.postgresql import JSON, JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 from src.domain.enums import ActorType, AlertStatus, AuditAction, NotificationStatus
@@ -115,6 +115,37 @@ class NotificationEventORM(Base):
 
     # Cross-layer enum reference
     status_enum = NotificationStatus
+
+
+class AuditEventORM(Base):
+    __tablename__ = "audit_events"
+
+    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
+    actor_id = Column(String, nullable=False)
+    actor_type = Column(
+        Enum(ActorType, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+    )
+    action = Column(
+        Enum(AuditAction, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+    )
+    entity_type = Column(String, nullable=False)
+    entity_id = Column(String, nullable=False)
+    prior_state = Column(JSONB, nullable=True)
+    new_state = Column(JSONB, nullable=True)
+    redacted_fields = Column(JSONB, nullable=False, default=list)
+    trace_id = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_audit_events_entity", "entity_type", "entity_id"),
+        Index("ix_audit_events_actor_id", "actor_id"),
+        Index("ix_audit_events_action", "action"),
+        Index("ix_audit_events_created_at", "created_at"),
+    )
+
+    status_enum = None
 
 
 class ProviderQuotaUsageORM(Base):

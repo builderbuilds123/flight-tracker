@@ -1,23 +1,29 @@
 """
 Notification service for sending price drop alerts to users.
 """
+from __future__ import annotations
+
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import TelegramError
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 
 from app.models.flight_alert import FlightAlert
 from app.models.user import User, UserPreference
 from app.core.config import settings
 
+if TYPE_CHECKING:
+    from src.services.audit_emitter import AuditEmitter
+
 
 class NotificationService:
     """Service for sending notifications to users."""
-    
-    def __init__(self, bot: Bot, session: AsyncSession):
+
+    def __init__(self, bot: Bot, session: AsyncSession, audit: Optional["AuditEmitter"] = None):
         self.bot = bot
         self.session = session
+        self._audit = audit
     
     async def send_price_drop_notification(
         self,
@@ -98,10 +104,40 @@ class NotificationService:
             # Update last notified time
             alert.last_notified_at = datetime.utcnow()
             await self.session.flush()
-            
+
+            if self._audit:
+                from src.domain.enums import AuditAction, ActorType
+                await self._audit.emit(
+                    actor_id="system",
+                    actor_type=ActorType.SYSTEM,
+                    action=AuditAction.NOTIFICATION_SENT,
+                    entity_type="Notification",
+                    entity_id=str(alert.id),
+                    new_state={
+                        "channel": "telegram",
+                        "old_price": old_price,
+                        "new_price": new_price,
+                        "telegram_chat_id": str(user.telegram_id),
+                    },
+                )
+
             return True
-            
+
         except TelegramError as e:
+            if self._audit:
+                from src.domain.enums import AuditAction, ActorType
+                await self._audit.emit(
+                    actor_id="system",
+                    actor_type=ActorType.SYSTEM,
+                    action=AuditAction.NOTIFICATION_FAILED,
+                    entity_type="Notification",
+                    entity_id=str(alert.id),
+                    new_state={
+                        "channel": "telegram",
+                        "error": str(e),
+                        "telegram_chat_id": str(user.telegram_id),
+                    },
+                )
             print(f"Failed to send notification to user {user.telegram_id}: {e}")
             return False
     

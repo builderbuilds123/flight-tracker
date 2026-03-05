@@ -8,6 +8,7 @@ from src.domain.models.alert import Alert
 from src.domain.models.price_snapshot import PriceSnapshot
 from src.domain.models.notification_event import NotificationEvent
 from src.domain.models.provider_quota_usage import ProviderQuotaUsage
+from src.domain.models.audit_event import AuditEvent
 
 __all__ = [
     "User",
@@ -15,4 +16,5 @@ __all__ = [
     "PriceSnapshot",
     "NotificationEvent",
     "ProviderQuotaUsage",
+    "AuditEvent",
 ]

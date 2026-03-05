@@ -22,6 +22,7 @@ from src.infrastructure.db.models import (  # noqa: F401, E402
     PriceSnapshotORM,
     NotificationEventORM,
     ProviderQuotaUsageORM,
+    AuditEventORM,
 )
 
 config = context.config

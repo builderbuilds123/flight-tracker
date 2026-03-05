@@ -1,12 +1,17 @@
 """Alert service for database operations on flight alerts."""
+from __future__ import annotations
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 import enum
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from src.services.audit_emitter import AuditEmitter
 
 
 class AlertStatus(enum.Enum):
@@ -67,9 +72,10 @@ User.alerts = relationship("FlightAlert", back_populates="user", cascade="all, d
 
 class AlertService:
     """Service for flight alert-related database operations."""
-    
-    def __init__(self, session: AsyncSession):
+
+    def __init__(self, session: AsyncSession, audit: Optional["AuditEmitter"] = None):
         self.session = session
+        self._audit = audit
     
     async def create_alert(self, user_id: int, origin_airport: str, destination_airport: str, target_price: float,
                           origin_city: str = None, destination_city: str = None, departure_date: datetime = None,
@@ -92,6 +98,22 @@ class AlertService:
         )
         self.session.add(alert)
         await self.session.flush()
+        if self._audit:
+            from src.domain.enums import AuditAction, ActorType
+            await self._audit.emit(
+                actor_id=str(user_id),
+                actor_type=ActorType.USER,
+                action=AuditAction.ALERT_CREATED,
+                entity_type="Alert",
+                entity_id=str(alert.id),
+                new_state={
+                    "origin_airport": alert.origin_airport,
+                    "destination_airport": alert.destination_airport,
+                    "target_price": alert.target_price,
+                    "currency": alert.currency,
+                    "status": alert.status.value,
+                },
+            )
         return alert
     
     async def get_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:
@@ -111,9 +133,27 @@ class AlertService:
         """Update alert status."""
         alert = await self.get_alert(alert_id, user_id)
         if alert:
+            prior_status = alert.status.value
             alert.status = status
             alert.updated_at = datetime.utcnow()
             await self.session.flush()
+            if self._audit:
+                from src.domain.enums import AuditAction as DomainAuditAction, ActorType
+                action_map = {
+                    "paused": DomainAuditAction.ALERT_PAUSED,
+                    "active": DomainAuditAction.ALERT_RESUMED,
+                    "expired": DomainAuditAction.ALERT_ARCHIVED,
+                }
+                audit_action = action_map.get(status.value, DomainAuditAction.ALERT_UPDATED)
+                await self._audit.emit(
+                    actor_id=str(user_id),
+                    actor_type=ActorType.USER,
+                    action=audit_action,
+                    entity_type="Alert",
+                    entity_id=str(alert_id),
+                    prior_state={"status": prior_status},
+                    new_state={"status": status.value},
+                )
         return alert
     
     async def pause_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:

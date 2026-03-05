@@ -6,12 +6,14 @@ from src.domain.models.alert import Alert
 from src.domain.models.price_snapshot import PriceSnapshot
 from src.domain.models.notification_event import NotificationEvent
 from src.domain.models.provider_quota_usage import ProviderQuotaUsage
+from src.domain.models.audit_event import AuditEvent
 from src.infrastructure.db.models import (
     UserORM,
     AlertORM,
     PriceSnapshotORM,
     NotificationEventORM,
     ProviderQuotaUsageORM,
+    AuditEventORM,
 )
 
 
@@ -161,4 +163,39 @@ def provider_quota_to_orm(entity: ProviderQuotaUsage) -> ProviderQuotaUsageORM:
         window_end=entity.window_end,
         requests_used=entity.requests_used,
         requests_limit=entity.requests_limit,
+    )
+
+
+# ---------------------------------------------------------------------------
+# AuditEvent
+# ---------------------------------------------------------------------------
+def audit_event_from_orm(orm: AuditEventORM) -> AuditEvent:
+    return AuditEvent(
+        id=orm.id,
+        actor_id=orm.actor_id,
+        actor_type=orm.actor_type,
+        action=orm.action,
+        entity_type=orm.entity_type,
+        entity_id=orm.entity_id,
+        prior_state=orm.prior_state,
+        new_state=orm.new_state,
+        redacted_fields=orm.redacted_fields or [],
+        trace_id=orm.trace_id,
+        created_at=orm.created_at,
+    )
+
+
+def audit_event_to_orm(entity: AuditEvent) -> AuditEventORM:
+    return AuditEventORM(
+        id=entity.id,
+        actor_id=entity.actor_id,
+        actor_type=entity.actor_type,
+        action=entity.action,
+        entity_type=entity.entity_type,
+        entity_id=entity.entity_id,
+        prior_state=entity.prior_state,
+        new_state=entity.new_state,
+        redacted_fields=entity.redacted_fields,
+        trace_id=entity.trace_id,
+        created_at=entity.created_at,
     )

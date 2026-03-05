@@ -23,6 +23,7 @@ import pytest
 from src.domain.enums import AlertStatus, NotificationStatus
 from src.domain.models import (
     Alert,
+    AuditEvent,
     NotificationEvent,
     PriceSnapshot,
     ProviderQuotaUsage,
@@ -31,6 +32,7 @@ from src.domain.models import (
 from src.domain.models import __all__ as domain_models_all
 from src.infrastructure.db.models import (
     AlertORM,
+    AuditEventORM,
     NotificationEventORM,
     PriceSnapshotORM,
     ProviderQuotaUsageORM,
@@ -48,6 +50,7 @@ ENTITY_ORM_PAIRS: list[tuple[type, type]] = [
     (PriceSnapshot, PriceSnapshotORM),
     (NotificationEvent, NotificationEventORM),
     (ProviderQuotaUsage, ProviderQuotaUsageORM),
+    (AuditEvent, AuditEventORM),
 ]
 
 # Columns that exist in ORM but not in the domain entity (relationship attrs)
@@ -57,6 +60,7 @@ ORM_RELATIONSHIP_ATTRS = {
     "PriceSnapshotORM": {"alert", "notification_events", "metadata", "registry"},
     "NotificationEventORM": {"alert", "snapshot", "metadata", "registry"},
     "ProviderQuotaUsageORM": {"metadata", "registry"},
+    "AuditEventORM": {"metadata", "registry"},
 }
 
 # Internal SQLAlchemy attributes to skip when comparing ORM columns
@@ -106,7 +110,7 @@ class TestImportIdentity:
 
     def test_domain_models_all_export_complete(self):
         """__all__ in src.domain.models lists every entity."""
-        expected = {"User", "Alert", "PriceSnapshot", "NotificationEvent", "ProviderQuotaUsage"}
+        expected = {"User", "Alert", "PriceSnapshot", "NotificationEvent", "ProviderQuotaUsage", "AuditEvent"}
         assert set(domain_models_all) == expected
 
     def test_enums_importable_from_boundary(self):
@@ -186,7 +190,7 @@ class TestContractDrift:
 
     def test_entity_count_matches_orm_count(self):
         """Same number of domain entities and ORM models."""
-        assert len(ENTITY_ORM_PAIRS) == 5, "Expected 5 entity/ORM pairs"
+        assert len(ENTITY_ORM_PAIRS) == 6, "Expected 6 entity/ORM pairs"
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +212,8 @@ class TestMapperCompleteness:
         "notification_event_to_orm",
         "provider_quota_from_orm",
         "provider_quota_to_orm",
+        "audit_event_from_orm",
+        "audit_event_to_orm",
     }
 
     def test_all_mappers_exported(self):
@@ -224,7 +230,7 @@ class TestMapperCompleteness:
 
     @pytest.mark.parametrize(
         "entity_name",
-        ["user", "alert", "price_snapshot", "notification_event", "provider_quota"],
+        ["user", "alert", "price_snapshot", "notification_event", "provider_quota", "audit_event"],
     )
     def test_bidirectional_mapper_exists(self, entity_name: str):
         """Each entity has both from_orm and to_orm functions."""

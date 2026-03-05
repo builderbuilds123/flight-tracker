@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, Protocol
 
-from src.domain.enums import NotificationStatus
+from src.domain.enums import ActorType, AuditAction, NotificationStatus
 from src.domain.models.notification_event import NotificationEvent
 
 
@@ -39,10 +39,12 @@ class NotificationDispatcher:
         repo: NotificationEventsRepoProtocol,
         sender,
         max_retries: int = 3,
+        audit=None,
     ) -> None:
         self._repo = repo
         self._sender = sender
         self._max_retries = max_retries
+        self._audit = audit
 
     async def enqueue(
         self,
@@ -86,7 +88,27 @@ class NotificationDispatcher:
                 NotificationStatus.FAILED
             )
 
-        return await self._repo.update(updated)
+        result = await self._repo.update(updated)
+        if self._audit:
+            action = (
+                AuditAction.NOTIFICATION_SENT
+                if result.status == NotificationStatus.SENT
+                else AuditAction.NOTIFICATION_FAILED
+            )
+            await self._audit.emit(
+                actor_id="system",
+                actor_type=ActorType.SYSTEM,
+                action=action,
+                entity_type="Notification",
+                entity_id=str(result.id),
+                prior_state={"status": event.status.value},
+                new_state={
+                    "status": result.status.value,
+                    "attempt_count": result.attempt_count,
+                    "last_error": result.last_error,
+                },
+            )
+        return result
 
     async def retry(self, event_id: uuid.UUID) -> NotificationEvent:
         """Retry a failed notification or move to dead letter if max retries exceeded."""
