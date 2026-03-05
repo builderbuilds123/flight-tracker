@@ -132,9 +132,9 @@ class AuditEventORM(Base):
     )
     entity_type = Column(String, nullable=False)
     entity_id = Column(String, nullable=False)
-    prior_state = Column(JSONB, nullable=True)
-    new_state = Column(JSONB, nullable=True)
-    redacted_fields = Column(JSONB, nullable=False, default=list)
+    prior_state = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=True)
+    new_state = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=True)
+    redacted_fields = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=False, default=list)
     trace_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 

@@ -111,7 +111,7 @@ class NotificationService:
                     actor_id="system",
                     actor_type=ActorType.SYSTEM,
                     action=AuditAction.NOTIFICATION_SENT,
-                    entity_type="Notification",
+                    entity_type="Alert",
                     entity_id=str(alert.id),
                     new_state={
                         "channel": "telegram",
@@ -130,7 +130,7 @@ class NotificationService:
                     actor_id="system",
                     actor_type=ActorType.SYSTEM,
                     action=AuditAction.NOTIFICATION_FAILED,
-                    entity_type="Notification",
+                    entity_type="Alert",
                     entity_id=str(alert.id),
                     new_state={
                         "channel": "telegram",

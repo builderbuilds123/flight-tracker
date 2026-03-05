@@ -95,19 +95,22 @@ class NotificationDispatcher:
                 if result.status == NotificationStatus.SENT
                 else AuditAction.NOTIFICATION_FAILED
             )
-            await self._audit.emit(
-                actor_id="system",
-                actor_type=ActorType.SYSTEM,
-                action=action,
-                entity_type="Notification",
-                entity_id=str(result.id),
-                prior_state={"status": event.status.value},
-                new_state={
-                    "status": result.status.value,
-                    "attempt_count": result.attempt_count,
-                    "last_error": result.last_error,
-                },
-            )
+            try:
+                await self._audit.emit(
+                    actor_id="system",
+                    actor_type=ActorType.SYSTEM,
+                    action=action,
+                    entity_type="NotificationEvent",
+                    entity_id=str(result.id),
+                    prior_state={"status": event.status.value},
+                    new_state={
+                        "status": result.status.value,
+                        "attempt_count": result.attempt_count,
+                        "last_error": result.last_error,
+                    },
+                )
+            except Exception:
+                pass  # Audit is best-effort; do not break delivery flow
         return result
 
     async def retry(self, event_id: uuid.UUID) -> NotificationEvent:

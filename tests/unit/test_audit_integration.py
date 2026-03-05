@@ -108,7 +108,7 @@ class TestDispatcherAuditIntegration:
         assert len(audit_repo.events) == 1
         audit = audit_repo.events[0]
         assert audit.action == AuditAction.NOTIFICATION_SENT
-        assert audit.entity_type == "Notification"
+        assert audit.entity_type == "NotificationEvent"
         assert audit.new_state["status"] == "sent"
 
     @pytest.mark.asyncio

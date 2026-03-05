@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.domain.enums import AuditAction
@@ -41,13 +41,14 @@ class AuditEventsRepo:
         action: Optional[AuditAction] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        cursor: Optional[datetime] = None,
+        cursor: Optional[str] = None,
         limit: int = 50,
     ) -> list[AuditEvent]:
         """Query audit events with optional filters and cursor-based pagination.
 
         Events are returned in reverse-chronological order (newest first).
-        The cursor is the ``created_at`` of the last item in the previous page.
+        The cursor is ``created_at|id`` of the last item in the previous page,
+        using (created_at, id) as a tie-breaker for stable ordering.
         """
         stmt = select(AuditEventORM)
 
@@ -64,9 +65,19 @@ class AuditEventsRepo:
         if end_date is not None:
             stmt = stmt.where(AuditEventORM.created_at <= end_date)
         if cursor is not None:
-            stmt = stmt.where(AuditEventORM.created_at < cursor)
+            parts = cursor.split("|", 1)
+            if len(parts) == 2:
+                cursor_ts = datetime.fromisoformat(parts[0])
+                cursor_id = uuid.UUID(parts[1])
+                stmt = stmt.where(
+                    tuple_(AuditEventORM.created_at, AuditEventORM.id)
+                    < tuple_(cursor_ts, cursor_id)
+                )
 
-        stmt = stmt.order_by(AuditEventORM.created_at.desc()).limit(limit)
+        stmt = stmt.order_by(
+            AuditEventORM.created_at.desc(),
+            AuditEventORM.id.desc(),
+        ).limit(limit)
 
         result = await self._session.execute(stmt)
         return [audit_event_from_orm(orm) for orm in result.scalars().all()]
