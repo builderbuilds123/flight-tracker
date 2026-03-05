@@ -103,8 +103,8 @@ class TestImportIdentity:
     """All layers must import the exact same class objects (identity, not equality)."""
 
     def test_domain_models_importable_from_boundary(self):
-        """All five domain entities importable from src.domain.models."""
-        for cls in (User, Alert, PriceSnapshot, NotificationEvent, ProviderQuotaUsage):
+        """All domain entities importable from src.domain.models."""
+        for cls in (User, Alert, PriceSnapshot, NotificationEvent, ProviderQuotaUsage, AuditEvent):
             assert cls is not None
             assert dataclasses.is_dataclass(cls)
 

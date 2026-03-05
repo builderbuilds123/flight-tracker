@@ -100,20 +100,23 @@ class AlertService:
         await self.session.flush()
         if self._audit:
             from src.domain.enums import AuditAction, ActorType
-            await self._audit.emit(
-                actor_id=str(user_id),
-                actor_type=ActorType.USER,
-                action=AuditAction.ALERT_CREATED,
-                entity_type="Alert",
-                entity_id=str(alert.id),
-                new_state={
-                    "origin_airport": alert.origin_airport,
-                    "destination_airport": alert.destination_airport,
-                    "target_price": alert.target_price,
-                    "currency": alert.currency,
-                    "status": alert.status.value,
-                },
-            )
+            try:
+                await self._audit.emit(
+                    actor_id=str(user_id),
+                    actor_type=ActorType.USER,
+                    action=AuditAction.ALERT_CREATED,
+                    entity_type="Alert",
+                    entity_id=str(alert.id),
+                    new_state={
+                        "origin_airport": alert.origin_airport,
+                        "destination_airport": alert.destination_airport,
+                        "target_price": alert.target_price,
+                        "currency": alert.currency,
+                        "status": alert.status.value,
+                    },
+                )
+            except Exception:
+                pass  # Audit is best-effort
         return alert
     
     async def get_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:
@@ -145,15 +148,18 @@ class AlertService:
                     "expired": DomainAuditAction.ALERT_ARCHIVED,
                 }
                 audit_action = action_map.get(status.value, DomainAuditAction.ALERT_UPDATED)
-                await self._audit.emit(
-                    actor_id=str(user_id),
-                    actor_type=ActorType.USER,
-                    action=audit_action,
-                    entity_type="Alert",
-                    entity_id=str(alert_id),
-                    prior_state={"status": prior_status},
-                    new_state={"status": status.value},
-                )
+                try:
+                    await self._audit.emit(
+                        actor_id=str(user_id),
+                        actor_type=ActorType.USER,
+                        action=audit_action,
+                        entity_type="Alert",
+                        entity_id=str(alert_id),
+                        prior_state={"status": prior_status},
+                        new_state={"status": status.value},
+                    )
+                except Exception:
+                    pass  # Audit is best-effort
         return alert
     
     async def pause_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:

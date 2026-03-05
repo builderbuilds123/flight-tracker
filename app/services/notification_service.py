@@ -107,37 +107,43 @@ class NotificationService:
 
             if self._audit:
                 from src.domain.enums import AuditAction, ActorType
-                await self._audit.emit(
-                    actor_id="system",
-                    actor_type=ActorType.SYSTEM,
-                    action=AuditAction.NOTIFICATION_SENT,
-                    entity_type="Alert",
-                    entity_id=str(alert.id),
-                    new_state={
-                        "channel": "telegram",
-                        "old_price": old_price,
-                        "new_price": new_price,
-                        "telegram_chat_id": str(user.telegram_id),
-                    },
-                )
+                try:
+                    await self._audit.emit(
+                        actor_id="system",
+                        actor_type=ActorType.SYSTEM,
+                        action=AuditAction.NOTIFICATION_SENT,
+                        entity_type="Alert",
+                        entity_id=str(alert.id),
+                        new_state={
+                            "channel": "telegram",
+                            "old_price": old_price,
+                            "new_price": new_price,
+                            "telegram_chat_id": str(user.telegram_id),
+                        },
+                    )
+                except Exception:
+                    pass  # Audit is best-effort
 
             return True
 
         except TelegramError as e:
             if self._audit:
                 from src.domain.enums import AuditAction, ActorType
-                await self._audit.emit(
-                    actor_id="system",
-                    actor_type=ActorType.SYSTEM,
-                    action=AuditAction.NOTIFICATION_FAILED,
-                    entity_type="Alert",
-                    entity_id=str(alert.id),
-                    new_state={
-                        "channel": "telegram",
-                        "error": str(e),
-                        "telegram_chat_id": str(user.telegram_id),
-                    },
-                )
+                try:
+                    await self._audit.emit(
+                        actor_id="system",
+                        actor_type=ActorType.SYSTEM,
+                        action=AuditAction.NOTIFICATION_FAILED,
+                        entity_type="Alert",
+                        entity_id=str(alert.id),
+                        new_state={
+                            "channel": "telegram",
+                            "error": str(e),
+                            "telegram_chat_id": str(user.telegram_id),
+                        },
+                    )
+                except Exception:
+                    pass  # Audit is best-effort
             print(f"Failed to send notification to user {user.telegram_id}: {e}")
             return False
     
