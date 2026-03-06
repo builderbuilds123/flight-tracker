@@ -478,9 +478,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Liveness Api V1 Health Live Get"
+                  "additionalProperties": true
                 }
               }
             }
