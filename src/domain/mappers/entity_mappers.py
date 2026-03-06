@@ -1,20 +1,22 @@
 """Typed mapping helpers for domain entity <-> ORM conversion."""
 from __future__ import annotations
 
+import importlib
+
 from src.domain.models.user import User
 from src.domain.models.alert import Alert
 from src.domain.models.price_snapshot import PriceSnapshot
 from src.domain.models.notification_event import NotificationEvent
 from src.domain.models.provider_quota_usage import ProviderQuotaUsage
 from src.domain.models.audit_event import AuditEvent
-from src.infrastructure.db.models import (
-    UserORM,
-    AlertORM,
-    PriceSnapshotORM,
-    NotificationEventORM,
-    ProviderQuotaUsageORM,
-    AuditEventORM,
-)
+
+_orm_models = importlib.import_module("src.infrastructure.db.models")
+UserORM = _orm_models.UserORM
+AlertORM = _orm_models.AlertORM
+PriceSnapshotORM = _orm_models.PriceSnapshotORM
+NotificationEventORM = _orm_models.NotificationEventORM
+ProviderQuotaUsageORM = _orm_models.ProviderQuotaUsageORM
+AuditEventORM = _orm_models.AuditEventORM
 
 
 # ---------------------------------------------------------------------------

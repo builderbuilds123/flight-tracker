@@ -32,9 +32,12 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-# Allow DATABASE_URL env var to override alembic.ini (useful for tests / CI).
+# Allow DATABASE_URL env var to override alembic.ini for default runtime config,
+# but do not clobber explicit per-test URLs set by test fixtures.
 url_override = os.environ.get("DATABASE_URL")
-if url_override:
+configured_url = config.get_main_option("sqlalchemy.url")
+default_ini_url = "postgresql://postgres:postgres@db:5432/flight_tracker"
+if url_override and (not configured_url or configured_url == default_ini_url):
     config.set_main_option("sqlalchemy.url", url_override)
 
 
