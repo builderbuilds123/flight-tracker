@@ -10,6 +10,8 @@ from src.domain.mappers.entity_mappers import (
     notification_event_to_orm,
     provider_quota_from_orm,
     provider_quota_to_orm,
+    audit_event_from_orm,
+    audit_event_to_orm,
 )
 
 __all__ = [
@@ -23,4 +25,6 @@ __all__ = [
     "notification_event_to_orm",
     "provider_quota_from_orm",
     "provider_quota_to_orm",
+    "audit_event_from_orm",
+    "audit_event_to_orm",
 ]

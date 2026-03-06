@@ -7,7 +7,7 @@ from app.core.config import settings
 
 # Create async engine
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.ASYNC_DATABASE_URL,
     echo=settings.ENVIRONMENT == "development",
     pool_pre_ping=True,
     pool_size=10,
@@ -32,6 +32,7 @@ async def init_db():
     async with engine.begin() as conn:
         # Import all models to ensure they're registered with Base
         from app.models import flight_price, alert  # noqa: F401
+
         await conn.run_sync(Base.metadata.create_all)
 
 

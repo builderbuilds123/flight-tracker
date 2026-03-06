@@ -1,8 +1,4 @@
-"""SQLAlchemy ORM models – persistence layer.
-
-These ORM classes map directly to database tables and reference the
-canonical domain enums from src.domain.enums.
-"""
+"""Core ORM models excluding audit events."""
 from __future__ import annotations
 
 import uuid
@@ -20,13 +16,10 @@ from sqlalchemy import (
     Uuid,
 )
 from sqlalchemy.dialects.postgresql import JSON
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import relationship
 
 from src.domain.enums import AlertStatus, NotificationStatus
-
-
-class Base(DeclarativeBase):
-    pass
+from src.infrastructure.db.models.base import Base
 
 
 class UserORM(Base):
@@ -40,8 +33,7 @@ class UserORM(Base):
 
     alerts = relationship("AlertORM", back_populates="user")
 
-    # Expose enum class for cross-layer verification
-    status_enum = None  # Users don't have a status enum
+    status_enum = None
 
 
 class AlertORM(Base):
@@ -69,7 +61,6 @@ class AlertORM(Base):
     price_snapshots = relationship("PriceSnapshotORM", back_populates="alert")
     notification_events = relationship("NotificationEventORM", back_populates="alert")
 
-    # Cross-layer enum reference
     status_enum = AlertStatus
 
 
@@ -112,7 +103,6 @@ class NotificationEventORM(Base):
     alert = relationship("AlertORM", back_populates="notification_events")
     snapshot = relationship("PriceSnapshotORM", back_populates="notification_events")
 
-    # Cross-layer enum reference
     status_enum = NotificationStatus
 
 

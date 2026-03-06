@@ -36,7 +36,7 @@ celery_app.conf.update(
 def check_alert_price(self, alert_id: int):
     """
     Check price for a specific alert
-    
+
     This is a Celery task that runs periodically to check flight prices
     """
     try:
@@ -44,7 +44,7 @@ def check_alert_price(self, alert_id: int):
         return asyncio.run(_check_price_async(alert_id))
     except Exception as exc:
         # Retry with exponential backoff
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries))
 
 
 async def _check_price_async(alert_id: int):
@@ -53,16 +53,18 @@ async def _check_price_async(alert_id: int):
         # Get alert
         result = await db.execute(select(Alert).where(Alert.id == alert_id))
         alert = result.scalar_one_or_none()
-        
+
         if not alert or not alert.is_active:
             return {"status": "skipped", "reason": "alert not found or inactive"}
-        
+
         # Check if it's time to check this alert
         if alert.last_checked:
-            next_check = alert.last_checked + timedelta(hours=alert.check_frequency_hours)
+            next_check = alert.last_checked + timedelta(
+                hours=alert.check_frequency_hours
+            )
             if datetime.utcnow() < next_check:
                 return {"status": "skipped", "reason": "not yet time to check"}
-        
+
         # Search flights via Kiwi API
         kiwi_service = KiwiService()
         flight_data = await kiwi_service.search_flights(
@@ -71,14 +73,14 @@ async def _check_price_async(alert_id: int):
             departure_date=alert.departure_date,
             return_date=alert.return_date,
         )
-        
+
         if not flight_data or "data" not in flight_data or not flight_data["data"]:
             return {"status": "error", "reason": "no flights found"}
-        
+
         # Extract current price (cheapest flight)
         current_price = flight_data["data"][0]["price"]
         currency = flight_data["data"][0].get("currency", "USD")
-        
+
         # Save price to history
         price_record = PriceHistory(
             alert_id=alert_id,
@@ -87,19 +89,19 @@ async def _check_price_async(alert_id: int):
             flight_data=flight_data,
         )
         db.add(price_record)
-        
+
         # Update alert
         previous_price = alert.last_price
         alert.last_price = current_price
         alert.last_checked = datetime.utcnow()
-        
+
         await db.commit()
-        
+
         # Check if price dropped below threshold
         notification_sent = False
         if previous_price and current_price < previous_price:
             drop_percentage = ((previous_price - current_price) / previous_price) * 100
-            
+
             if current_price <= alert.max_price:
                 # Send notification
                 notification_service = NotificationService()
@@ -110,7 +112,7 @@ async def _check_price_async(alert_id: int):
                     previous_price=previous_price,
                 )
                 notification_sent = True
-        
+
         return {
             "status": "success",
             "alert_id": alert_id,
@@ -125,9 +127,10 @@ async def _check_price_async(alert_id: int):
 def check_all_due_alerts():
     """
     Check all alerts that are due for price checking
-    
+
     This task should be scheduled to run every hour via Celery Beat
     """
+
     async def _check_all_async():
         async with async_session_maker() as db:
             # Get all active alerts that are due for checking
@@ -137,12 +140,14 @@ def check_all_due_alerts():
                     and_(
                         Alert.is_active == True,
                         Alert.last_checked != None,
-                        Alert.last_checked + timedelta(hours=Alert.check_frequency_hours) <= now,
+                        Alert.last_checked
+                        + timedelta(hours=Alert.check_frequency_hours)
+                        <= now,
                     )
                 )
             )
             alerts = result.scalars().all()
-            
+
             # Also get alerts that have never been checked
             result = await db.execute(
                 select(Alert).where(
@@ -153,15 +158,15 @@ def check_all_due_alerts():
                 )
             )
             unchecked_alerts = result.scalars().all()
-            
+
             all_alerts = list(alerts) + list(unchecked_alerts)
-            
+
             # Queue individual price check tasks
             for alert in all_alerts:
                 check_alert_price.delay(alert.id)
-            
+
             return {"status": "queued", "count": len(all_alerts)}
-    
+
     return asyncio.run(_check_all_async())
 
 

@@ -64,3 +64,23 @@ _NOTIFICATION_TRANSITIONS: dict[NotificationStatus, frozenset[NotificationStatus
     NotificationStatus.SENT: frozenset(),
     NotificationStatus.DEAD: frozenset(),
 }
+
+
+class AuditAction(str, Enum):
+    """Audit trail action types."""
+
+    ALERT_CREATED = "ALERT_CREATED"
+    ALERT_UPDATED = "ALERT_UPDATED"
+    ALERT_PAUSED = "ALERT_PAUSED"
+    ALERT_RESUMED = "ALERT_RESUMED"
+    ALERT_ARCHIVED = "ALERT_ARCHIVED"
+    NOTIFICATION_SENT = "NOTIFICATION_SENT"
+    NOTIFICATION_FAILED = "NOTIFICATION_FAILED"
+
+
+class ActorType(str, Enum):
+    """Who initiated an audited action."""
+
+    USER = "user"
+    SYSTEM = "system"
+    API_KEY = "api_key"
