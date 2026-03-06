@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.core.database import Base, get_db
+from app.api.alerts import reset_alert_store
 from app.models.alert import Alert
 
 
@@ -48,6 +49,7 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(scope="function", autouse=True)
 async def setup_database():
     """Create tables before each test"""
+    reset_alert_store()
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield

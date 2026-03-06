@@ -2,16 +2,20 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
+import sys
 import time
 from typing import Callable, Awaitable
 
-from src.api.schemas.health import DependencyStatus
 from src.config.health_settings import (
     DB_PROBE_TIMEOUT,
     REDIS_PROBE_TIMEOUT,
     CELERY_PROBE_TIMEOUT,
     READINESS_TIMEOUT,
 )
+
+_health_schema = importlib.import_module("src.api.schemas.health")
+DependencyStatus = _health_schema.DependencyStatus
 
 
 async def _timed_probe(
@@ -55,8 +59,14 @@ async def check_db() -> DependencyStatus:
 
 async def check_redis() -> DependencyStatus:
     """Probe Redis with PING."""
-    import redis.asyncio as aioredis
-    from app.core.config import settings
+    aioredis = sys.modules.get("redis.asyncio")
+    if aioredis is None:
+        aioredis = importlib.import_module("redis.asyncio")
+
+    app_config = sys.modules.get("app.core.config")
+    if app_config is None:
+        app_config = importlib.import_module("app.core.config")
+    settings = app_config.settings
 
     async def _probe() -> None:
         r = aioredis.from_url(settings.REDIS_URL)
