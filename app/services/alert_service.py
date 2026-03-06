@@ -135,11 +135,15 @@ class AlertService:
                 await self._audit.emit(
                     actor=ActorContext(
                         actor_type=ActorType.USER,
-                        actor_id=uuid.uuid5(uuid.NAMESPACE_URL, f"telegram-user:{user_id}"),
+                        actor_id=uuid.uuid5(
+                            uuid.NAMESPACE_URL, f"telegram-user:{user_id}"
+                        ),
                     ),
                     action=AuditAction.ALERT_CREATED,
                     entity_type="Alert",
-                    entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"),
+                    entity_id=uuid.uuid5(
+                        uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"
+                    ),
                     new_state={
                         "origin_airport": alert.origin_airport,
                         "destination_airport": alert.destination_airport,
@@ -206,11 +210,15 @@ class AlertService:
                     await self._audit.emit(
                         actor=ActorContext(
                             actor_type=ActorType.USER,
-                            actor_id=uuid.uuid5(uuid.NAMESPACE_URL, f"telegram-user:{user_id}"),
+                            actor_id=uuid.uuid5(
+                                uuid.NAMESPACE_URL, f"telegram-user:{user_id}"
+                            ),
                         ),
                         action=audit_action,
                         entity_type="Alert",
-                        entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert_id}"),
+                        entity_id=uuid.uuid5(
+                            uuid.NAMESPACE_URL, f"flight-alert:{alert_id}"
+                        ),
                         old_state={"status": prior_status},
                         new_state={"status": status.value},
                     )

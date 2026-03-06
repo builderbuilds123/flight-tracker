@@ -123,7 +123,9 @@ class NotificationService:
                         actor=ActorContext(actor_type=ActorType.SYSTEM, actor_id=None),
                         action=AuditAction.NOTIFICATION_SENT,
                         entity_type="Alert",
-                        entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"),
+                        entity_id=uuid.uuid5(
+                            uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"
+                        ),
                         new_state={
                             "channel": "telegram",
                             "old_price": old_price,
@@ -151,7 +153,9 @@ class NotificationService:
                         actor=ActorContext(actor_type=ActorType.SYSTEM, actor_id=None),
                         action=AuditAction.NOTIFICATION_FAILED,
                         entity_type="Alert",
-                        entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"),
+                        entity_id=uuid.uuid5(
+                            uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"
+                        ),
                         new_state={
                             "channel": "telegram",
                             "error": str(e),
