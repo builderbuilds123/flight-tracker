@@ -1,6 +1,6 @@
 """Preferences handler for user settings."""
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, CallbackQueryHandler, filters
+from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.services.user_service import UserService, NotificationFrequency
