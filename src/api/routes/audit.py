@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import datetime
 from typing import Optional
 
@@ -24,8 +25,8 @@ async def list_audit_events(
     current_user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
     entity_type: Optional[str] = Query(None, description="Filter by entity type (e.g. 'Alert')"),
-    entity_id: Optional[str] = Query(None, description="Filter by entity ID"),
-    actor_id: Optional[str] = Query(None, description="Filter by actor ID"),
+    entity_id: Optional[uuid.UUID] = Query(None, description="Filter by entity ID"),
+    actor_id: Optional[uuid.UUID] = Query(None, description="Filter by actor ID"),
     action: Optional[AuditAction] = Query(None, description="Filter by audit action"),
     start_date: Optional[datetime] = Query(None, description="Start of date range (inclusive)"),
     end_date: Optional[datetime] = Query(None, description="End of date range (inclusive)"),

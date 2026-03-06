@@ -10,6 +10,7 @@ from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 
 import logging
+import uuid
 
 from app.models.flight_alert import FlightAlert
 from app.models.user import User, UserPreference
@@ -115,14 +116,14 @@ class NotificationService:
 
             if self._audit:
                 from src.domain.enums import AuditAction, ActorType
+                from src.domain.models.audit_event import ActorContext
 
                 try:
                     await self._audit.emit(
-                        actor_id="system",
-                        actor_type=ActorType.SYSTEM,
+                        actor=ActorContext(actor_type=ActorType.SYSTEM, actor_id=None),
                         action=AuditAction.NOTIFICATION_SENT,
                         entity_type="Alert",
-                        entity_id=str(alert.id),
+                        entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"),
                         new_state={
                             "channel": "telegram",
                             "old_price": old_price,
@@ -143,14 +144,14 @@ class NotificationService:
         except TelegramError as e:
             if self._audit:
                 from src.domain.enums import AuditAction, ActorType
+                from src.domain.models.audit_event import ActorContext
 
                 try:
                     await self._audit.emit(
-                        actor_id="system",
-                        actor_type=ActorType.SYSTEM,
+                        actor=ActorContext(actor_type=ActorType.SYSTEM, actor_id=None),
                         action=AuditAction.NOTIFICATION_FAILED,
                         entity_type="Alert",
-                        entity_id=str(alert.id),
+                        entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"),
                         new_state={
                             "channel": "telegram",
                             "error": str(e),

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -17,15 +17,14 @@ class AuditEventResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, frozen=True)
 
     id: uuid.UUID
-    actor_id: str
+    actor_id: uuid.UUID | None
     actor_type: ActorType
     action: AuditAction
     entity_type: str
-    entity_id: str
-    prior_state: Optional[dict[str, Any]] = None
-    new_state: Optional[dict[str, Any]] = None
-    redacted_fields: list[str]
-    trace_id: Optional[str] = None
+    entity_id: uuid.UUID
+    old_state: dict[str, Any] | None = None
+    new_state: dict[str, Any] | None = None
+    metadata: dict[str, Any]
     created_at: datetime
 
 

@@ -177,10 +177,9 @@ def audit_event_from_orm(orm: AuditEventORM) -> AuditEvent:
         action=orm.action,
         entity_type=orm.entity_type,
         entity_id=orm.entity_id,
-        prior_state=orm.prior_state,
+        old_state=orm.old_state,
         new_state=orm.new_state,
-        redacted_fields=orm.redacted_fields or [],
-        trace_id=orm.trace_id,
+        metadata=orm.metadata_ or {},
         created_at=orm.created_at,
     )
 
@@ -193,9 +192,8 @@ def audit_event_to_orm(entity: AuditEvent) -> AuditEventORM:
         action=entity.action,
         entity_type=entity.entity_type,
         entity_id=entity.entity_id,
-        prior_state=entity.prior_state,
+        old_state=entity.old_state,
         new_state=entity.new_state,
-        redacted_fields=entity.redacted_fields,
-        trace_id=entity.trace_id,
+        metadata_=entity.metadata,
         created_at=entity.created_at,
     )

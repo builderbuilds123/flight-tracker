@@ -1,60 +1,49 @@
-"""Redaction utility for audit event state payloads.
-
-Redacts sensitive field values in-place (returns new dict) based on
-field-name patterns. Tracks which fields were redacted so the audit
-trail can record the list without exposing the values.
-"""
+"""Redaction utilities for audit payloads."""
 from __future__ import annotations
 
-import re
+import os
 from typing import Any
 
-# Fields whose *names* match any of these patterns are considered sensitive.
-_SENSITIVE_NAME_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"token", re.IGNORECASE),
-    re.compile(r"secret", re.IGNORECASE),
-    re.compile(r"key", re.IGNORECASE),
-    re.compile(r"password", re.IGNORECASE),
-    re.compile(r"credential", re.IGNORECASE),
-]
-
-# PII field names (exact match, case-insensitive).
-_PII_FIELDS: frozenset[str] = frozenset({
-    "email",
-    "phone",
-    "telegram_chat_id",
-})
+_BASELINE_FIELDS: frozenset[str] = frozenset(
+    {"telegram_chat_id", "user_id", "raw_payload"}
+)
+_ADDITIVE_ENV_VAR = "AUDIT_REDACT_ADDITIONAL_FIELDS"
 
 REDACTED = "***REDACTED***"
 
 
-def _is_sensitive(field_name: str) -> bool:
-    """Return True if the field name matches a sensitive pattern or is PII."""
-    lower = field_name.lower()
-    if lower in _PII_FIELDS:
-        return True
-    return any(pat.search(field_name) for pat in _SENSITIVE_NAME_PATTERNS)
+def _configured_fields() -> set[str]:
+    raw = os.getenv(_ADDITIVE_ENV_VAR, "")
+    additive = {item.strip().lower() for item in raw.split(",") if item.strip()}
+    return set(_BASELINE_FIELDS).union(additive)
+
+
+def _redact(value: Any, sensitive_fields: set[str]) -> Any:
+    if isinstance(value, dict):
+        redacted: dict[str, Any] = {}
+        for key, item in value.items():
+            if key.lower() in sensitive_fields:
+                redacted[key] = REDACTED
+            else:
+                redacted[key] = _redact(item, sensitive_fields)
+        return redacted
+    if isinstance(value, list):
+        return [_redact(item, sensitive_fields) for item in value]
+    return value
+
+
+def redact_payload(payload: Any) -> Any:
+    """Return a deep-redacted copy of payload using baseline+env fields."""
+    if payload is None:
+        return None
+    return _redact(payload, _configured_fields())
 
 
 def redact_state(state: dict[str, Any] | None) -> tuple[dict[str, Any] | None, list[str]]:
-    """Return a redacted copy of *state* and the list of redacted field names.
-
-    Only top-level keys are inspected. Nested dicts are not traversed.
-
-    Returns:
-        (redacted_copy, redacted_field_names)
-    """
+    """Backward-compatible wrapper for existing callers."""
     if state is None:
         return None, []
-
-    redacted_fields: list[str] = []
-    result: dict[str, Any] = {}
-
-    for key, value in state.items():
-        if _is_sensitive(key):
-            result[key] = REDACTED
-            redacted_fields.append(key)
-        else:
-            result[key] = value
-
-    return result, sorted(redacted_fields)
+    sensitive = _configured_fields()
+    redacted = _redact(state, sensitive)
+    fields = sorted(k for k in state.keys() if k.lower() in sensitive)
+    return redacted, fields

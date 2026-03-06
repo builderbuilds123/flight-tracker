@@ -1,73 +1,58 @@
 """Unit tests for the redaction utility (S6-05)."""
 import pytest
 
-from src.observability.redaction import REDACTED, redact_state
+from src.observability.redaction import REDACTED, redact_payload
 
 
-class TestRedactState:
-    """Tests for redact_state()."""
+class TestRedactPayload:
+    """Tests for redact_payload()."""
 
     def test_none_input_returns_none(self):
-        result, fields = redact_state(None)
-        assert result is None
-        assert fields == []
+        assert redact_payload(None) is None
 
     def test_empty_dict(self):
-        result, fields = redact_state({})
-        assert result == {}
-        assert fields == []
+        assert redact_payload({}) == {}
 
     def test_no_sensitive_fields(self):
         state = {"origin_iata": "JFK", "status": "active", "price": 199.99}
-        result, fields = redact_state(state)
+        result = redact_payload(state)
         assert result == state
-        assert fields == []
 
-    # -- Keyword-based sensitive fields --
-
-    @pytest.mark.parametrize("field_name", [
-        "token", "api_token", "access_token", "Token",
-        "secret", "client_secret", "SECRET_VALUE",
-        "key", "api_key", "API_KEY",
-        "password", "Password", "user_password",
-        "credential", "credentials", "Credential",
-    ])
-    def test_sensitive_keyword_redacted(self, field_name: str):
-        state = {field_name: "super-secret-value", "safe_field": "visible"}
-        result, fields = redact_state(state)
+    @pytest.mark.parametrize("field_name", ["telegram_chat_id", "user_id", "raw_payload"])
+    def test_baseline_field_redacted(self, field_name: str):
+        state = {field_name: "secret-value", "safe_field": "visible"}
+        result = redact_payload(state)
         assert result[field_name] == REDACTED
         assert result["safe_field"] == "visible"
-        assert field_name in fields
 
-    # -- PII fields --
-
-    @pytest.mark.parametrize("field_name", [
-        "email", "phone", "telegram_chat_id",
-    ])
-    def test_pii_field_redacted(self, field_name: str):
-        state = {field_name: "user@example.com", "status": "ok"}
-        result, fields = redact_state(state)
-        assert result[field_name] == REDACTED
-        assert result["status"] == "ok"
-        assert field_name in fields
-
-    def test_multiple_sensitive_fields_sorted(self):
+    def test_nested_redaction(self):
         state = {
-            "email": "a@b.com",
-            "api_key": "k-123",
-            "status": "active",
-            "password": "hunter2",
+            "status": "ok",
+            "details": {"telegram_chat_id": "1234"},
+            "items": [{"raw_payload": {"secret": "x"}}],
         }
-        result, fields = redact_state(state)
-        assert result["email"] == REDACTED
-        assert result["api_key"] == REDACTED
-        assert result["password"] == REDACTED
-        assert result["status"] == "active"
-        # Fields should be sorted alphabetically
-        assert fields == ["api_key", "email", "password"]
+        result = redact_payload(state)
+        assert result["details"]["telegram_chat_id"] == REDACTED
+        assert result["items"][0]["raw_payload"] == REDACTED
+
+    def test_env_additive_redaction(self, monkeypatch):
+        monkeypatch.setenv("AUDIT_REDACT_ADDITIONAL_FIELDS", "booking_url,token")
+        state = {"booking_url": "http://example.com", "token": "abc", "status": "ok"}
+        result = redact_payload(state)
+        assert result["booking_url"] == REDACTED
+        assert result["token"] == REDACTED
+        assert result["status"] == "ok"
+
+    def test_env_whitespace_and_case_handled(self, monkeypatch):
+        monkeypatch.setenv("AUDIT_REDACT_ADDITIONAL_FIELDS", "  Booking_URL , TOKEN ")
+        state = {"booking_url": "x", "token": "y", "status": "ok"}
+        result = redact_payload(state)
+        assert result["booking_url"] == REDACTED
+        assert result["token"] == REDACTED
+        assert result["status"] == "ok"
 
     def test_original_dict_not_mutated(self):
-        state = {"api_key": "secret123"}
-        original_value = state["api_key"]
-        redact_state(state)
-        assert state["api_key"] == original_value
+        state = {"raw_payload": {"a": 1}}
+        original_value = state["raw_payload"]
+        redact_payload(state)
+        assert state["raw_payload"] == original_value

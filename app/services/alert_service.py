@@ -18,6 +18,7 @@ from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 import enum
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -128,14 +129,17 @@ class AlertService:
         await self.session.flush()
         if self._audit:
             from src.domain.enums import AuditAction, ActorType
+            from src.domain.models.audit_event import ActorContext
 
             try:
                 await self._audit.emit(
-                    actor_id=str(user_id),
-                    actor_type=ActorType.USER,
+                    actor=ActorContext(
+                        actor_type=ActorType.USER,
+                        actor_id=uuid.uuid5(uuid.NAMESPACE_URL, f"telegram-user:{user_id}"),
+                    ),
                     action=AuditAction.ALERT_CREATED,
                     entity_type="Alert",
-                    entity_id=str(alert.id),
+                    entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert.id}"),
                     new_state={
                         "origin_airport": alert.origin_airport,
                         "destination_airport": alert.destination_airport,
@@ -188,6 +192,7 @@ class AlertService:
             await self.session.flush()
             if self._audit:
                 from src.domain.enums import AuditAction as DomainAuditAction, ActorType
+                from src.domain.models.audit_event import ActorContext
 
                 action_map = {
                     "paused": DomainAuditAction.ALERT_PAUSED,
@@ -199,12 +204,14 @@ class AlertService:
                 )
                 try:
                     await self._audit.emit(
-                        actor_id=str(user_id),
-                        actor_type=ActorType.USER,
+                        actor=ActorContext(
+                            actor_type=ActorType.USER,
+                            actor_id=uuid.uuid5(uuid.NAMESPACE_URL, f"telegram-user:{user_id}"),
+                        ),
                         action=audit_action,
                         entity_type="Alert",
-                        entity_id=str(alert_id),
-                        prior_state={"status": prior_status},
+                        entity_id=uuid.uuid5(uuid.NAMESPACE_URL, f"flight-alert:{alert_id}"),
+                        old_state={"status": prior_status},
                         new_state={"status": status.value},
                     )
                 except Exception as e:

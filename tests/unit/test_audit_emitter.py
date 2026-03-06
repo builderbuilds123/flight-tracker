@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 
 from src.domain.enums import ActorType, AuditAction
-from src.domain.models.audit_event import AuditEvent
+from src.domain.models.audit_event import ActorContext, AuditEvent
 from src.services.audit_emitter import AuditEmitter
 
 
@@ -32,11 +32,10 @@ class TestAuditEmitter:
     @pytest.mark.asyncio
     async def test_emit_persists_event(self, emitter, repo):
         event = await emitter.emit(
-            actor_id="user-1",
-            actor_type=ActorType.USER,
+            actor=ActorContext(actor_type=ActorType.USER, actor_id=uuid.uuid4()),
             action=AuditAction.ALERT_CREATED,
             entity_type="Alert",
-            entity_id="alert-abc",
+            entity_id=uuid.uuid4(),
             new_state={"status": "active"},
         )
         assert len(repo.events) == 1
@@ -47,82 +46,72 @@ class TestAuditEmitter:
     @pytest.mark.asyncio
     async def test_emit_redacts_sensitive_fields(self, emitter, repo):
         event = await emitter.emit(
-            actor_id="system",
-            actor_type=ActorType.SYSTEM,
+            actor=ActorContext(actor_type=ActorType.SYSTEM, actor_id=None),
             action=AuditAction.NOTIFICATION_SENT,
             entity_type="Notification",
-            entity_id="notif-1",
+            entity_id=uuid.uuid4(),
             new_state={
                 "channel": "telegram",
                 "telegram_chat_id": "12345",
-                "api_key": "secret-key",
+                "user_id": "some-user-id",
             },
         )
         assert event.new_state["telegram_chat_id"] == "***REDACTED***"
-        assert event.new_state["api_key"] == "***REDACTED***"
+        assert event.new_state["user_id"] == "***REDACTED***"
         assert event.new_state["channel"] == "telegram"
-        assert "api_key" in event.redacted_fields
-        assert "telegram_chat_id" in event.redacted_fields
 
     @pytest.mark.asyncio
     async def test_emit_redacts_prior_state(self, emitter, repo):
         event = await emitter.emit(
-            actor_id="user-1",
-            actor_type=ActorType.USER,
+            actor=ActorContext(actor_type=ActorType.USER, actor_id=uuid.uuid4()),
             action=AuditAction.ALERT_UPDATED,
             entity_type="Alert",
-            entity_id="alert-1",
-            prior_state={"email": "old@example.com", "status": "active"},
-            new_state={"email": "new@example.com", "status": "paused"},
+            entity_id=uuid.uuid4(),
+            old_state={"telegram_chat_id": "111", "status": "active"},
+            new_state={"telegram_chat_id": "222", "status": "paused"},
         )
-        assert event.prior_state["email"] == "***REDACTED***"
-        assert event.new_state["email"] == "***REDACTED***"
-        assert "email" in event.redacted_fields
+        assert event.old_state["telegram_chat_id"] == "***REDACTED***"
+        assert event.new_state["telegram_chat_id"] == "***REDACTED***"
 
     @pytest.mark.asyncio
     async def test_emit_with_no_state(self, emitter, repo):
         event = await emitter.emit(
-            actor_id="user-1",
-            actor_type=ActorType.USER,
+            actor=ActorContext(actor_type=ActorType.USER, actor_id=uuid.uuid4()),
             action=AuditAction.ALERT_ARCHIVED,
             entity_type="Alert",
-            entity_id="alert-1",
+            entity_id=uuid.uuid4(),
         )
-        assert event.prior_state is None
+        assert event.old_state is None
         assert event.new_state is None
-        assert event.redacted_fields == []
 
     @pytest.mark.asyncio
     async def test_emit_sets_created_at(self, emitter, repo):
         before = datetime.now(timezone.utc)
         event = await emitter.emit(
-            actor_id="user-1",
-            actor_type=ActorType.USER,
+            actor=ActorContext(actor_type=ActorType.USER, actor_id=uuid.uuid4()),
             action=AuditAction.ALERT_PAUSED,
             entity_type="Alert",
-            entity_id="alert-1",
+            entity_id=uuid.uuid4(),
         )
         assert event.created_at >= before
 
     @pytest.mark.asyncio
     async def test_emit_assigns_uuid(self, emitter, repo):
         event = await emitter.emit(
-            actor_id="user-1",
-            actor_type=ActorType.USER,
+            actor=ActorContext(actor_type=ActorType.USER, actor_id=uuid.uuid4()),
             action=AuditAction.ALERT_RESUMED,
             entity_type="Alert",
-            entity_id="alert-1",
+            entity_id=uuid.uuid4(),
         )
         assert isinstance(event.id, uuid.UUID)
 
     @pytest.mark.asyncio
-    async def test_emit_with_trace_id(self, emitter, repo):
+    async def test_emit_with_metadata(self, emitter, repo):
         event = await emitter.emit(
-            actor_id="api-key-xyz",
-            actor_type=ActorType.API_KEY,
+            actor=ActorContext(actor_type=ActorType.API_KEY, actor_id=None),
             action=AuditAction.ALERT_UPDATED,
             entity_type="Alert",
-            entity_id="alert-1",
-            trace_id="req-trace-42",
+            entity_id=uuid.uuid4(),
+            metadata={"trace_id": "req-trace-42"},
         )
-        assert event.trace_id == "req-trace-42"
+        assert event.metadata == {"trace_id": "req-trace-42"}

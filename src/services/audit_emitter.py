@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
-from src.domain.enums import ActorType, AuditAction
-from src.domain.models.audit_event import AuditEvent
-from src.observability.redaction import redact_state
+from src.domain.enums import AuditAction
+from src.domain.models.audit_event import ActorContext, AuditEvent
+from src.observability.redaction import redact_payload
 
 
 class AuditRepoProtocol(Protocol):
@@ -29,31 +29,25 @@ class AuditEmitter:
     async def emit(
         self,
         *,
-        actor_id: str,
-        actor_type: ActorType,
+        actor: ActorContext,
         action: AuditAction,
         entity_type: str,
-        entity_id: str,
-        prior_state: Optional[dict[str, Any]] = None,
-        new_state: Optional[dict[str, Any]] = None,
-        trace_id: Optional[str] = None,
+        entity_id: uuid.UUID,
+        old_state: dict[str, Any] | None = None,
+        new_state: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuditEvent:
         """Build, redact, and persist an audit event."""
-        redacted_prior, fields_prior = redact_state(prior_state)
-        redacted_new, fields_new = redact_state(new_state)
-        all_redacted = sorted(set(fields_prior + fields_new))
-
         event = AuditEvent(
             id=uuid.uuid4(),
-            actor_id=actor_id,
-            actor_type=actor_type,
+            actor_id=actor.actor_id,
+            actor_type=actor.actor_type,
             action=action,
             entity_type=entity_type,
             entity_id=entity_id,
-            prior_state=redacted_prior,
-            new_state=redacted_new,
-            redacted_fields=all_redacted,
-            trace_id=trace_id,
+            old_state=redact_payload(old_state),
+            new_state=redact_payload(new_state),
+            metadata=redact_payload(metadata) or {},
             created_at=datetime.now(timezone.utc),
         )
         return await self._repo.create(event)

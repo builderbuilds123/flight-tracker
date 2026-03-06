@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.domain.enums import AuditAction, NotificationStatus
-from src.domain.models.audit_event import AuditEvent
+from src.domain.enums import ActorType, AuditAction, NotificationStatus
+from src.domain.models.audit_event import ActorContext, AuditEvent
 from src.domain.models.notification_event import NotificationEvent
 from src.services.audit_emitter import AuditEmitter
 from src.services.notification_dispatcher import (
@@ -110,6 +110,7 @@ class TestDispatcherAuditIntegration:
         assert audit.action == AuditAction.NOTIFICATION_SENT
         assert audit.entity_type == "NotificationEvent"
         assert audit.new_state["status"] == "sent"
+        assert audit.actor_type == ActorType.SYSTEM
 
     @pytest.mark.asyncio
     async def test_deliver_failure_emits_failed_audit(self, notification_repo, audit_repo, audit_emitter):
@@ -131,6 +132,7 @@ class TestDispatcherAuditIntegration:
         assert audit.action == AuditAction.NOTIFICATION_FAILED
         assert audit.new_state["status"] == "failed"
         assert audit.new_state["last_error"] == "connection timeout"
+        assert audit.actor_type == ActorType.SYSTEM
 
     @pytest.mark.asyncio
     async def test_dispatcher_without_audit_still_works(self, notification_repo, sender):

@@ -11,15 +11,14 @@ from src.domain.models.audit_event import AuditEvent
 def _make_audit_event(**overrides) -> AuditEvent:
     defaults = dict(
         id=uuid.uuid4(),
-        actor_id="user-123",
+        actor_id=uuid.uuid4(),
         actor_type=ActorType.USER,
         action=AuditAction.ALERT_CREATED,
         entity_type="Alert",
-        entity_id=str(uuid.uuid4()),
-        prior_state=None,
+        entity_id=uuid.uuid4(),
+        old_state=None,
         new_state={"status": "active"},
-        redacted_fields=[],
-        trace_id=None,
+        metadata={},
         created_at=datetime.now(timezone.utc),
     )
     defaults.update(overrides)
@@ -46,6 +45,14 @@ class TestAuditEventCreation:
         with pytest.raises(TypeError, match="action must be AuditAction"):
             _make_audit_event(action="bad")
 
+    def test_invalid_actor_id_raises(self):
+        with pytest.raises(TypeError, match="actor_id must be UUID or None"):
+            _make_audit_event(actor_id="not-a-uuid")
+
+    def test_invalid_entity_id_raises(self):
+        with pytest.raises(TypeError, match="entity_id must be UUID"):
+            _make_audit_event(entity_id="not-a-uuid")
+
     def test_all_actions(self):
         for action in AuditAction:
             event = _make_audit_event(action=action)
@@ -58,16 +65,12 @@ class TestAuditEventCreation:
 
     def test_prior_and_new_state(self):
         event = _make_audit_event(
-            prior_state={"status": "active"},
+            old_state={"status": "active"},
             new_state={"status": "paused"},
         )
-        assert event.prior_state == {"status": "active"}
+        assert event.old_state == {"status": "active"}
         assert event.new_state == {"status": "paused"}
 
-    def test_redacted_fields_stored(self):
-        event = _make_audit_event(redacted_fields=["email", "api_key"])
-        assert event.redacted_fields == ["email", "api_key"]
-
-    def test_trace_id(self):
-        event = _make_audit_event(trace_id="trace-abc-123")
-        assert event.trace_id == "trace-abc-123"
+    def test_metadata_stored(self):
+        event = _make_audit_event(metadata={"source": "worker"})
+        assert event.metadata == {"source": "worker"}

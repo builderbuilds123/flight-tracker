@@ -13,6 +13,7 @@ from typing import Optional, Protocol
 logger = logging.getLogger(__name__)
 
 from src.domain.enums import ActorType, AuditAction, NotificationStatus
+from src.domain.models.audit_event import ActorContext
 from src.domain.models.notification_event import NotificationEvent
 
 
@@ -100,12 +101,11 @@ class NotificationDispatcher:
             )
             try:
                 await self._audit.emit(
-                    actor_id="system",
-                    actor_type=ActorType.SYSTEM,
+                    actor=ActorContext(actor_type=ActorType.SYSTEM, actor_id=None),
                     action=action,
                     entity_type="NotificationEvent",
-                    entity_id=str(result.id),
-                    prior_state={"status": event.status.value},
+                    entity_id=result.id,
+                    old_state={"status": event.status.value},
                     new_state={
                         "status": result.status.value,
                         "attempt_count": result.attempt_count,

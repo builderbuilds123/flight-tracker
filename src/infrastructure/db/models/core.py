@@ -1,8 +1,4 @@
-"""SQLAlchemy ORM models – persistence layer.
-
-These ORM classes map directly to database tables and reference the
-canonical domain enums from src.domain.enums.
-"""
+"""Core ORM models excluding audit events."""
 from __future__ import annotations
 
 import uuid
@@ -13,21 +9,17 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
-    Index,
     Integer,
     Numeric,
     String,
     Text,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import JSON, JSONB
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.orm import relationship
 
-from src.domain.enums import ActorType, AlertStatus, AuditAction, NotificationStatus
-
-
-class Base(DeclarativeBase):
-    pass
+from src.domain.enums import AlertStatus, NotificationStatus
+from src.infrastructure.db.models.base import Base
 
 
 class UserORM(Base):
@@ -41,8 +33,7 @@ class UserORM(Base):
 
     alerts = relationship("AlertORM", back_populates="user")
 
-    # Expose enum class for cross-layer verification
-    status_enum = None  # Users don't have a status enum
+    status_enum = None
 
 
 class AlertORM(Base):
@@ -70,7 +61,6 @@ class AlertORM(Base):
     price_snapshots = relationship("PriceSnapshotORM", back_populates="alert")
     notification_events = relationship("NotificationEventORM", back_populates="alert")
 
-    # Cross-layer enum reference
     status_enum = AlertStatus
 
 
@@ -113,39 +103,7 @@ class NotificationEventORM(Base):
     alert = relationship("AlertORM", back_populates="notification_events")
     snapshot = relationship("PriceSnapshotORM", back_populates="notification_events")
 
-    # Cross-layer enum reference
     status_enum = NotificationStatus
-
-
-class AuditEventORM(Base):
-    __tablename__ = "audit_events"
-
-    id = Column(Uuid, primary_key=True, default=uuid.uuid4)
-    actor_id = Column(String, nullable=False)
-    actor_type = Column(
-        Enum(ActorType, values_callable=lambda e: [m.value for m in e]),
-        nullable=False,
-    )
-    action = Column(
-        Enum(AuditAction, values_callable=lambda e: [m.value for m in e]),
-        nullable=False,
-    )
-    entity_type = Column(String, nullable=False)
-    entity_id = Column(String, nullable=False)
-    prior_state = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=True)
-    new_state = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=True)
-    redacted_fields = Column(JSON().with_variant(JSONB(), "postgresql"), nullable=False, default=list)
-    trace_id = Column(String, nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        Index("ix_audit_events_entity", "entity_type", "entity_id"),
-        Index("ix_audit_events_actor_id", "actor_id"),
-        Index("ix_audit_events_action", "action"),
-        Index("ix_audit_events_created_at", "created_at"),
-    )
-
-    status_enum = None
 
 
 class ProviderQuotaUsageORM(Base):
