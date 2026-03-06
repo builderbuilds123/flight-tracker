@@ -25,7 +25,7 @@ app = FastAPI(
     title="Flight Price Tracker",
     description="Track flight prices and get notified when prices drop",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -46,8 +46,4 @@ app.include_router(audit_router)
 
 @app.get("/")
 async def root():
-    return {
-        "message": "Flight Price Tracker API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+    return {"message": "Flight Price Tracker API", "version": "1.0.0", "docs": "/docs"}

@@ -27,6 +27,7 @@ _VERSION = "1.0.0"
 # GET /api/v1/health/live
 # ------------------------------------------------------------------
 
+
 @router.get("/live")
 async def liveness_check() -> dict:
     """Kubernetes liveness probe — always returns 200."""
@@ -36,6 +37,7 @@ async def liveness_check() -> dict:
 # ------------------------------------------------------------------
 # GET /api/v1/health/ready
 # ------------------------------------------------------------------
+
 
 @router.get("/ready", response_model=ReadinessResponse)
 async def readiness_check(response: Response) -> ReadinessResponse:
@@ -58,6 +60,7 @@ async def readiness_check(response: Response) -> ReadinessResponse:
 # ------------------------------------------------------------------
 # GET /api/v1/health
 # ------------------------------------------------------------------
+
 
 @router.get("", response_model=FullHealthResponse)
 async def full_health(response: Response) -> FullHealthResponse:

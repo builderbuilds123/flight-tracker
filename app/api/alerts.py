@@ -11,6 +11,7 @@ router = APIRouter()
 
 class AlertCreate(BaseModel):
     """Create a new price alert"""
+
     origin_airport: str
     destination_airport: str
     target_price: float
@@ -25,6 +26,7 @@ class AlertCreate(BaseModel):
 
 class AlertResponse(BaseModel):
     """Alert response model"""
+
     id: int
     origin_airport: str
     destination_airport: str
@@ -33,7 +35,7 @@ class AlertResponse(BaseModel):
     status: str
     is_active: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -51,7 +53,7 @@ async def create_alert(alert: AlertCreate):
         currency=alert.currency,
         status="active",
         is_active=True,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
 
 
@@ -59,7 +61,7 @@ async def create_alert(alert: AlertCreate):
 async def list_alerts(
     status_filter: Optional[str] = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=100),
-    offset: int = Query(0, ge=0)
+    offset: int = Query(0, ge=0),
 ):
     """List all alerts with optional filtering"""
     # TODO: Implement database query
@@ -70,27 +72,18 @@ async def list_alerts(
 async def get_alert(alert_id: int):
     """Get a specific alert by ID"""
     # TODO: Implement database query
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Alert not found"
-    )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
 
 
 @router.delete("/{alert_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_alert(alert_id: int):
     """Delete an alert"""
     # TODO: Implement database deletion
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Alert not found"
-    )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
 
 
 @router.patch("/{alert_id}/cancel", response_model=AlertResponse)
 async def cancel_alert(alert_id: int):
     """Cancel an active alert"""
     # TODO: Implement cancellation logic
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Alert not found"
-    )
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")

@@ -11,6 +11,7 @@ router = APIRouter()
 
 class PriceQuery(BaseModel):
     """Query parameters for price search"""
+
     origin_airport: str
     destination_airport: str
     departure_date: datetime
@@ -20,6 +21,7 @@ class PriceQuery(BaseModel):
 
 class PriceResult(BaseModel):
     """Flight price result"""
+
     price: float
     currency: str
     airline: Optional[str]
@@ -35,6 +37,7 @@ class PriceResult(BaseModel):
 
 class PriceHistory(BaseModel):
     """Price history for a route"""
+
     route: str
     prices: List[dict]
     min_price: float
@@ -52,9 +55,7 @@ async def search_prices(query: PriceQuery):
 
 @router.get("/history/{origin}-{destination}", response_model=PriceHistory)
 async def get_price_history(
-    origin: str,
-    destination: str,
-    days: int = Query(30, ge=1, le=365)
+    origin: str, destination: str, days: int = Query(30, ge=1, le=365)
 ):
     """Get price history for a route"""
     # TODO: Implement price history query
@@ -64,7 +65,7 @@ async def get_price_history(
         min_price=0,
         max_price=0,
         avg_price=0,
-        current_price=None
+        current_price=None,
     )
 
 
@@ -72,7 +73,7 @@ async def get_price_history(
 async def get_route_prices(
     origin: str,
     destination: str,
-    departure_month: Optional[str] = Query(None, description="YYYY-MM format")
+    departure_month: Optional[str] = Query(None, description="YYYY-MM format"),
 ):
     """Get current prices for a route"""
     # TODO: Implement route price query
@@ -80,5 +81,5 @@ async def get_route_prices(
         "route": f"{origin}-{destination}",
         "prices": [],
         "cheapest": None,
-        "average": None
+        "average": None,
     }

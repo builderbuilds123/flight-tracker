@@ -2,7 +2,17 @@
 from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy import (
+    select,
+    Column,
+    Integer,
+    String,
+    Float,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Enum as SQLEnum,
+)
 from sqlalchemy.orm import relationship
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
@@ -26,42 +36,43 @@ class AlertStatus(enum.Enum):
 
 class FlightAlert(Base):
     """Flight price alert model for Telegram users."""
+
     __tablename__ = "flight_alerts"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("telegram_users.id"), nullable=False)
-    
+
     origin_airport = Column(String(3), nullable=False)
     destination_airport = Column(String(3), nullable=False)
     origin_city = Column(String(100), nullable=True)
     destination_city = Column(String(100), nullable=True)
-    
+
     departure_date = Column(DateTime, nullable=True)
     return_date = Column(DateTime, nullable=True)
     is_flexible_dates = Column(Boolean, default=False)
     flexible_days = Column(Integer, default=3)
     is_one_way = Column(Boolean, default=False)
-    
+
     target_price = Column(Float, nullable=False)
     current_price = Column(Float, nullable=True)
     last_checked_price = Column(Float, nullable=True)
     lowest_price_found = Column(Float, nullable=True)
     currency = Column(String(3), default="USD")
-    
+
     status = Column(SQLEnum(AlertStatus), default=AlertStatus.ACTIVE)
-    
+
     last_checked_at = Column(DateTime, nullable=True)
     last_notified_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     user = relationship("User", back_populates="alerts")
-    
+
     def is_price_drop(self) -> bool:
         if self.current_price is None or self.last_checked_price is None:
             return False
         return self.current_price < self.last_checked_price
-    
+
     def get_price_difference(self) -> Optional[float]:
         if self.current_price is None or self.last_checked_price is None:
             return None
@@ -70,7 +81,10 @@ class FlightAlert(Base):
 
 # Add alerts relationship to User
 from app.services.user_service import User
-User.alerts = relationship("FlightAlert", back_populates="user", cascade="all, delete-orphan")
+
+User.alerts = relationship(
+    "FlightAlert", back_populates="user", cascade="all, delete-orphan"
+)
 
 
 class AlertService:
@@ -79,11 +93,22 @@ class AlertService:
     def __init__(self, session: AsyncSession, audit: Optional["AuditEmitter"] = None):
         self.session = session
         self._audit = audit
-    
-    async def create_alert(self, user_id: int, origin_airport: str, destination_airport: str, target_price: float,
-                          origin_city: str = None, destination_city: str = None, departure_date: datetime = None,
-                          return_date: datetime = None, is_flexible_dates: bool = False, flexible_days: int = 3,
-                          currency: str = "USD", is_one_way: bool = False) -> FlightAlert:
+
+    async def create_alert(
+        self,
+        user_id: int,
+        origin_airport: str,
+        destination_airport: str,
+        target_price: float,
+        origin_city: str = None,
+        destination_city: str = None,
+        departure_date: datetime = None,
+        return_date: datetime = None,
+        is_flexible_dates: bool = False,
+        flexible_days: int = 3,
+        currency: str = "USD",
+        is_one_way: bool = False,
+    ) -> FlightAlert:
         """Create a new flight alert."""
         alert = FlightAlert(
             user_id=user_id,
@@ -103,6 +128,7 @@ class AlertService:
         await self.session.flush()
         if self._audit:
             from src.domain.enums import AuditAction, ActorType
+
             try:
                 await self._audit.emit(
                     actor_id=str(user_id),
@@ -119,23 +145,40 @@ class AlertService:
                     },
                 )
             except Exception as e:
-                logger.warning("Audit emission failed for %s %s: %s", AuditAction.ALERT_CREATED, alert.id, e)
+                logger.warning(
+                    "Audit emission failed for %s %s: %s",
+                    AuditAction.ALERT_CREATED,
+                    alert.id,
+                    e,
+                )
         return alert
 
     async def get_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:
         """Get a specific alert by ID for a user."""
-        result = await self.session.execute(select(FlightAlert).where(FlightAlert.id == alert_id, FlightAlert.user_id == user_id))
+        result = await self.session.execute(
+            select(FlightAlert).where(
+                FlightAlert.id == alert_id, FlightAlert.user_id == user_id
+            )
+        )
         return result.scalar_one_or_none()
 
-    async def get_user_alerts(self, user_id: int, status: AlertStatus = None) -> List[FlightAlert]:
+    async def get_user_alerts(
+        self, user_id: int, status: AlertStatus = None
+    ) -> List[FlightAlert]:
         """Get all alerts for a user."""
-        query = select(FlightAlert).where(FlightAlert.user_id == user_id).order_by(FlightAlert.created_at.desc())
+        query = (
+            select(FlightAlert)
+            .where(FlightAlert.user_id == user_id)
+            .order_by(FlightAlert.created_at.desc())
+        )
         if status:
             query = query.where(FlightAlert.status == status)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def update_alert_status(self, alert_id: int, user_id: int, status: AlertStatus) -> Optional[FlightAlert]:
+    async def update_alert_status(
+        self, alert_id: int, user_id: int, status: AlertStatus
+    ) -> Optional[FlightAlert]:
         """Update alert status."""
         alert = await self.get_alert(alert_id, user_id)
         if alert:
@@ -145,12 +188,15 @@ class AlertService:
             await self.session.flush()
             if self._audit:
                 from src.domain.enums import AuditAction as DomainAuditAction, ActorType
+
                 action_map = {
                     "paused": DomainAuditAction.ALERT_PAUSED,
                     "active": DomainAuditAction.ALERT_RESUMED,
                     "expired": DomainAuditAction.ALERT_ARCHIVED,
                 }
-                audit_action = action_map.get(status.value, DomainAuditAction.ALERT_UPDATED)
+                audit_action = action_map.get(
+                    status.value, DomainAuditAction.ALERT_UPDATED
+                )
                 try:
                     await self._audit.emit(
                         actor_id=str(user_id),
@@ -162,17 +208,19 @@ class AlertService:
                         new_state={"status": status.value},
                     )
                 except Exception as e:
-                    logger.warning("Audit emission failed for %s %s: %s", audit_action, alert_id, e)
+                    logger.warning(
+                        "Audit emission failed for %s %s: %s", audit_action, alert_id, e
+                    )
         return alert
-    
+
     async def pause_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:
         """Pause an alert."""
         return await self.update_alert_status(alert_id, user_id, AlertStatus.PAUSED)
-    
+
     async def resume_alert(self, alert_id: int, user_id: int) -> Optional[FlightAlert]:
         """Resume a paused alert."""
         return await self.update_alert_status(alert_id, user_id, AlertStatus.ACTIVE)
-    
+
     async def delete_alert(self, alert_id: int, user_id: int) -> bool:
         """Delete an alert."""
         alert = await self.get_alert(alert_id, user_id)
@@ -181,9 +229,12 @@ class AlertService:
             await self.session.flush()
             return True
         return False
-    
+
     async def get_alert_count(self, user_id: int) -> int:
         """Get count of alerts for a user."""
         from sqlalchemy import func
-        result = await self.session.execute(select(func.count(FlightAlert.id)).where(FlightAlert.user_id == user_id))
+
+        result = await self.session.execute(
+            select(func.count(FlightAlert.id)).where(FlightAlert.user_id == user_id)
+        )
         return result.scalar() or 0
