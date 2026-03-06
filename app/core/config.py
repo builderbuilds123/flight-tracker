@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = "flight_tracker"
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: str = "5432"
+    DATABASE_URL: str | None = None
 
     # Redis
     REDIS_HOST: str = "localhost"
@@ -52,9 +53,17 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     @property
-    def DATABASE_URL(self) -> str:
-        """Construct database URL"""
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    def ASYNC_DATABASE_URL(self) -> str:
+        """Resolve an async-safe database URL for SQLAlchemy async engine."""
+        url = self.DATABASE_URL or (
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        return url
 
     @property
     def REDIS_URL(self) -> str:
