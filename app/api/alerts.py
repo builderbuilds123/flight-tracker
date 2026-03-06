@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field, field_validator
 
 router = APIRouter()
@@ -132,10 +132,11 @@ async def update_alert(alert_id: int, payload: AlertUpdate) -> AlertResponse:
 
 
 @router.delete("/{alert_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_alert(alert_id: int) -> None:
+async def delete_alert(alert_id: int) -> Response:
     """Delete an alert."""
     if alert_id not in _alerts_store:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found"
         )
     del _alerts_store[alert_id]
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
