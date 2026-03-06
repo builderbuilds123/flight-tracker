@@ -92,8 +92,12 @@ async def list_alerts(
         items = [item for item in items if item.user_id == user_id]
     if status_filter is not None:
         wanted = status_filter.lower()
-        items = [item for item in items if ("active" if item.is_active else "paused") == wanted]
-    return items[offset: offset + limit]
+        items = [
+            item
+            for item in items
+            if ("active" if item.is_active else "paused") == wanted
+        ]
+    return items[offset : offset + limit]
 
 
 @router.get("/{alert_id}", response_model=AlertResponse)
@@ -101,7 +105,9 @@ async def get_alert(alert_id: int) -> AlertResponse:
     """Get a specific alert by ID"""
     alert = _alerts_store.get(alert_id)
     if alert is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found"
+        )
     return alert
 
 
@@ -110,7 +116,9 @@ async def update_alert(alert_id: int, payload: AlertUpdate) -> AlertResponse:
     """Update an alert."""
     current = _alerts_store.get(alert_id)
     if current is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found"
+        )
 
     updated_data = current.model_dump()
     if payload.max_price is not None:
@@ -127,5 +135,7 @@ async def update_alert(alert_id: int, payload: AlertUpdate) -> AlertResponse:
 async def delete_alert(alert_id: int) -> None:
     """Delete an alert."""
     if alert_id not in _alerts_store:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found"
+        )
     del _alerts_store[alert_id]
