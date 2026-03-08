@@ -23,7 +23,7 @@ httpx==0.28.1
 
 # Telegram Bot
 aiogram==3.26.0
-python-telegram-bot==21.0
+python-telegram-bot==22.6
 
 # Configuration
 pydantic==2.12.5
