@@ -21,7 +21,7 @@ types-psycopg2==2.9.21.20240106
 
 # Development tools
 pre-commit==3.6.2
-watchfiles==0.21.0
+watchfiles==1.1.1
 ipython==9.10.0
 
 # API testing
