@@ -17,7 +17,7 @@ pylint==3.0.3
 
 # Type stubs
 types-redis==4.6.0.20241004
-types-psycopg2==2.9.21.20240106
+types-psycopg2==2.9.21.20260223
 
 # Development tools
 pre-commit==3.6.2
