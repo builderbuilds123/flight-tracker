@@ -2,7 +2,7 @@
 
 # Web Framework
 fastapi==0.135.1
-uvicorn[standard]==0.41.0
+uvicorn[standard]==0.42.0
 python-multipart==0.0.22
 
 # Database
@@ -13,7 +13,7 @@ alembic==1.18.4
 psycopg2-binary==2.9.11
 
 # Redis & Caching
-redis==7.2.1
+redis==7.3.0
 
 # Task Queue
 celery==5.6.2
